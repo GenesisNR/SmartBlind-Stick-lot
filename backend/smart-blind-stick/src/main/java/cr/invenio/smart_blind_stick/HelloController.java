@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController {
 
-    @GetMapping("/")
-    public String hello() {
+    @GetMapping("/health")
+    public String home() {
         return "Smart Blind Stick Backend is running 🚀";
     }
 }

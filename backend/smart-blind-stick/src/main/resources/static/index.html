@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Blind Stick - Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #0f172a; color: #e2e8f0; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 16px; }
+    .title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .big { font-size: 44px; font-weight: 800; }
+    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-weight: 700; }
+    .ok { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.35); }
+    .bad { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.35); }
+    .muted { color: #94a3b8; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; border-bottom: 1px solid #1f2937; text-align: left; }
+    th { color: #cbd5e1; font-size: 14px; }
+    .controls { display:flex; gap: 10px; flex-wrap: wrap; }
+    button { cursor:pointer; border: 1px solid #334155; background:#0b1220; color:#e2e8f0; padding:10px 12px; border-radius: 10px; font-weight:700;}
+    button:hover { background:#0a1a33; }
+    input { border:1px solid #334155; background:#0b1220; color:#e2e8f0; padding:10px 12px; border-radius:10px; width: 220px;}
+    .footer { margin-top: 14px; font-size: 13px; }
+    .error { color:#ef4444; font-weight:700; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="title">🦯 Smart Blind Stick - Dashboard</div>
+    <div class="muted">Lee datos desde <b>/api/sensor/last</b> y <b>/api/sensor/history</b> (Spring Boot).</div>
+
+    <div class="row" style="margin-top:16px;">
+      <div class="card">
+        <div class="muted">Distancia actual</div>
+        <div class="big"><span id="distance">--</span> <span style="font-size:18px;">cm</span></div>
+        <div style="margin-top:10px;">
+          <span id="obstaclePill" class="pill ok">Sin obstáculo</span>
+        </div>
+        <div class="footer muted">Última actualización: <span id="lastUpdate">--</span></div>
+        <div class="footer"><span id="errMsg" class="error"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Controles</div>
+        <div class="controls" style="margin-top:10px;">
+          <button onclick="refreshNow()">Actualizar ahora</button>
+          <button onclick="toggleAuto()">Auto: <span id="autoState">ON</span></button>
+          <input id="intervalMs" type="number" min="200" step="100" value="1000" />
+          <button onclick="applyInterval()">Aplicar ms</button>
+          <button onclick="loadHistory()">Cargar historial</button>
+        </div>
+        <div class="footer muted">
+          Tip: auto actualiza usando GET <b>/api/sensor/last</b>. El historial usa GET <b>/api/sensor/history</b>.
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="muted">Historial (últimos datos enviados)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Distancia (cm)</th>
+            <th>Obstáculo</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="3" class="muted">Presiona "Cargar historial".</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  let auto = true;
+  let timer = null;
+  let interval = 1000;
+
+  function setError(msg) {
+    document.getElementById("errMsg").textContent = msg || "";
+  }
+
+  function setUI(data) {
+    const dist = (data?.distance ?? "--");
+    const obstacle = !!data?.obstacleDetected;
+
+    document.getElementById("distance").textContent = dist;
+    const pill = document.getElementById("obstaclePill");
+
+    if (obstacle) {
+      pill.textContent = "⚠ Obstáculo detectado";
+      pill.className = "pill bad";
+    } else {
+      pill.textContent = "✅ Sin obstáculo";
+      pill.className = "pill ok";
+    }
+
+    const now = new Date();
+    document.getElementById("lastUpdate").textContent = now.toLocaleTimeString();
+  }
+
+  async function fetchLast() {
+    try {
+      setError("");
+      const res = await fetch("/api/sensor/last");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      setUI(data);
+    } catch (e) {
+      setError("Error leyendo /api/sensor/last: " + e.message);
+    }
+  }
+
+  async function loadHistory() {
+    try {
+      setError("");
+      const res = await fetch("/api/sensor/history");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const arr = await res.json();
+
+      const body = document.getElementById("historyBody");
+      body.innerHTML = "";
+
+      if (!Array.isArray(arr) || arr.length === 0) {
+        body.innerHTML = `<tr><td colspan="3" class="muted">No hay historial todavía. Envia datos con POST /api/sensor.</td></tr>`;
+        return;
+      }
+
+      const last20 = arr.slice(-20).reverse(); // muestra últimos 20
+      last20.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${item.distance}</td>
+          <td>${item.obstacleDetected ? "Sí" : "No"}</td>
+        `;
+        body.appendChild(tr);
+      });
+    } catch (e) {
+      setError("Error leyendo /api/sensor/history: " + e.message);
+    }
+  }
+
+  function startAuto() {
+    stopAuto();
+    timer = setInterval(fetchLast, interval);
+  }
+
+  function stopAuto() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+
+  function toggleAuto() {
+    auto = !auto;
+    document.getElementById("autoState").textContent = auto ? "ON" : "OFF";
+    if (auto) startAuto();
+    else stopAuto();
+  }
+
+  function applyInterval() {
+    const v = parseInt(document.getElementById("intervalMs").value, 10);
+    if (!Number.isFinite(v) || v < 200) {
+      alert("Pon un valor válido (mínimo 200 ms).");
+      return;
+    }
+    interval = v;
+    if (auto) startAuto();
+  }
+
+  function refreshNow() {
+    fetchLast();
+  }
+
+  // Init
+  fetchLast();
+  startAuto();
+</script>
+</body>
+</html>
