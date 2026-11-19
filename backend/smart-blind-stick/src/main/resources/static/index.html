@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <title>Smart Blind Stick - Dashboard</title>
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #0f172a; color: #e2e8f0; }
     .container { max-width: 1000px; margin: 0 auto; }
@@ -24,23 +35,50 @@
     input { border:1px solid #334155; background:#0b1220; color:#e2e8f0; padding:10px 12px; border-radius:10px; width: 220px;}
     .footer { margin-top: 14px; font-size: 13px; }
     .error { color:#ef4444; font-weight:700; }
+    #map {
+    height: 400px;
+    width: 100%;
+    border-radius: 14px;
+    margin-top: 10px;
+}
+#historyBody tr {
+  cursor: pointer;
+}
+
+#historyBody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+    * { box-sizing: border-box; }
+    .row > *, .card { min-width: 0; }
+    .table-scroll { overflow-x: auto; }
+    input { max-width: 100%; font-size: 16px; }
+    button { min-height: 44px; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+    .waiting { background: #1f2937; color: #e2e8f0; border: 1px solid #64748b; }
+    @media (max-width: 640px) {
+      body { margin: 12px; }
+      .row { grid-template-columns: 1fr; }
+      .big { font-size: 36px; }
+      #map { height: 300px; }
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <div class="title">🦯 Smart Blind Stick - Dashboard</div>
-    <div class="muted">Lee datos desde <b>/api/sensor/last</b> y <b>/api/sensor/history</b> (Spring Boot).</div>
+    <div class="muted">Distancia, estado y ubicación recibidos del bastón.</div>
 
     <div class="row" style="margin-top:16px;">
       <div class="card">
         <div class="muted">Distancia actual</div>
         <div class="big"><span id="distance">--</span> <span style="font-size:18px;">cm</span></div>
         <div style="margin-top:10px;">
-          <span id="obstaclePill" class="pill ok">Sin obstáculo</span>
+          <span id="obstaclePill" class="pill waiting" role="status">Esperando datos</span>
         </div>
         <div class="footer muted">Última actualización: <span id="lastUpdate">--</span></div>
-        <div class="footer"><span id="errMsg" class="error"></span></div>
+        <div class="footer"><span id="errMsg" class="error" role="status"></span></div>
       </div>
 
       <div class="card">
@@ -48,77 +86,109 @@
         <div class="controls" style="margin-top:10px;">
           <button onclick="refreshNow()">Actualizar ahora</button>
           <button onclick="toggleAuto()">Auto: <span id="autoState">ON</span></button>
-          <input id="intervalMs" type="number" min="200" step="100" value="1000" />
+          <label for="intervalMs">Intervalo (ms)</label><input id="intervalMs" type="number" min="200" step="100" value="1000" />
           <button onclick="applyInterval()">Aplicar ms</button>
           <button onclick="loadHistory()">Cargar historial</button>
         </div>
         <div class="footer muted">
-          Tip: auto actualiza usando GET <b>/api/sensor/last</b>. El historial usa GET <b>/api/sensor/history</b>.
+          Sin envíos del bastón durante 15 segundos, se indica que la lectura está desactualizada. <a href="/logout" style="color:#93c5fd">Cerrar sesión</a>
         </div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
       <div class="muted">Historial (últimos datos enviados)</div>
-      <table>
+      <div class="table-scroll"><table>
         <thead>
           <tr>
             <th>#</th>
             <th>Distancia (cm)</th>
             <th>Obstáculo</th>
+            <th>Latitud</th>
+            <th>Longitud</th>
           </tr>
         </thead>
         <tbody id="historyBody">
-          <tr><td colspan="3" class="muted">Presiona "Cargar historial".</td></tr>
+          <tr><td colspan="5"class="muted">Presiona "Cargar historial".</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
+    <div class="card" style="margin-top:16px;">
+    <div class="muted">Ubicación GPS del bastón</div>
+    <div id="map"></div>
+</div>
   </div>
 
 <script>
   let auto = true;
   let timer = null;
   let interval = 1000;
+  let lastReading = null;
+  let loading = false;
+  let map = window.L ? L.map("map").setView([10.6346, -85.4400], 15) : null;
+
+if (map) L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+let marker = null; // No invented GPS position before receiving a valid reading.
 
   function setError(msg) {
     document.getElementById("errMsg").textContent = msg || "";
   }
 
-  function setUI(data) {
-    const dist = (data?.distance ?? "--");
-    const obstacle = !!data?.obstacleDetected;
-
-    document.getElementById("distance").textContent = dist;
+  function showUnavailable(message) {
     const pill = document.getElementById("obstaclePill");
+    pill.textContent = message;
+    pill.className = "pill waiting";
+  }
 
-    if (obstacle) {
-      pill.textContent = "⚠ Obstáculo detectado";
-      pill.className = "pill bad";
-    } else {
-      pill.textContent = "✅ Sin obstáculo";
-      pill.className = "pill ok";
-    }
+  function showPosition(lat, lng, label, zoom = 15) {
+    if (!map || !Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return;
+    if (!marker) marker = L.marker([lat, lng]).addTo(map);
+    marker.setLatLng([lat, lng]).bindPopup(label);
+    map.setView([lat, lng], zoom);
+  }
 
-    const now = new Date();
-    document.getElementById("lastUpdate").textContent = now.toLocaleTimeString();
+  function checkFreshness() {
+    if (!navigator.onLine) { showUnavailable("Sin conexión a Internet"); return; }
+    if (!lastReading) return;
+    const age = Date.now() - Date.parse(lastReading.receivedAt);
+    if (!Number.isFinite(age) || age > 15000) showUnavailable("Sin datos recientes del bastón");
+  }
+
+  function setUI(data) {
+    lastReading = data;
+    document.getElementById("distance").textContent = data.distance;
+    const pill = document.getElementById("obstaclePill");
+    pill.textContent = data.obstacleDetected ? "⚠ Obstáculo detectado" : "Sin obstáculo en la última lectura";
+    pill.className = data.obstacleDetected ? "pill bad" : "pill ok";
+    document.getElementById("lastUpdate").textContent = new Date(data.receivedAt).toLocaleString();
+    showPosition(data.latitude, data.longitude, "Última ubicación recibida del bastón");
+    checkFreshness();
   }
 
   async function fetchLast() {
+    if (loading) return;
+    loading = true;
     try {
       setError("");
-      const res = await fetch("/api/sensor/last");
+      const res = await fetch("/api/sensor/last", {cache: "no-store", headers: {Accept: "application/json"}});
+      if (res.redirected || res.status === 401 || res.status === 403) { window.location.assign("/login"); return; }
+      if (res.status === 204) { showUnavailable("Esperando la primera lectura"); return; }
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      setUI(data);
+      setUI(await res.json());
     } catch (e) {
-      setError("Error leyendo /api/sensor/last: " + e.message);
-    }
+      showUnavailable("No se puede contactar con el servidor");
+      setError("No hay lecturas actuales. Comprueba la conexión.");
+    } finally { loading = false; }
   }
 
   async function loadHistory() {
     try {
       setError("");
-      const res = await fetch("/api/sensor/history");
+      const res = await fetch("/api/sensor/history", {cache: "no-store"});
+      if (res.redirected) { window.location.assign("/login"); return; }
       if (!res.ok) throw new Error("HTTP " + res.status);
       const arr = await res.json();
 
@@ -126,7 +196,7 @@
       body.innerHTML = "";
 
       if (!Array.isArray(arr) || arr.length === 0) {
-        body.innerHTML = `<tr><td colspan="3" class="muted">No hay historial todavía. Envia datos con POST /api/sensor.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="5"class="muted">Todavía no se han recibido lecturas del bastón.</td></tr>`;
         return;
       }
 
@@ -137,7 +207,17 @@
           <td>${idx + 1}</td>
           <td>${item.distance}</td>
           <td>${item.obstacleDetected ? "Sí" : "No"}</td>
+          <td>${item.latitude}</td>
+           <td>${item.longitude}</td>
         `;
+        tr.addEventListener("click", () => {
+          auto = false;
+           document.getElementById("autoState").textContent = "OFF";
+           stopAuto();
+          const lat = item.latitude;
+           const lng = item.longitude;
+           showPosition(lat, lng, "Ubicación seleccionada del historial", 17);
+});
         body.appendChild(tr);
       });
     } catch (e) {
@@ -176,6 +256,12 @@
     fetchLast();
   }
 
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+  window.addEventListener("offline", checkFreshness);
+  window.addEventListener("online", fetchLast);
+  setInterval(checkFreshness, 1000);
   // Init
   fetchLast();
   startAuto();

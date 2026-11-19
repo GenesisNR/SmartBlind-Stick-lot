@@ -1,0 +1,25 @@
+# Prototype plan. For no idle suspension, select a paid always-on plan in Render.
+# PostgreSQL is configured separately; this file does not create a paid database.
+services:
+  - type: web
+    name: smart-blind-stick
+    branch: develop
+    rootDir: backend/smart-blind-stick
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: DEVICE_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
