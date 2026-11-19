@@ -1,270 +1,67 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <title>Smart Blind Stick - Dashboard</title>
-  <link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #0f172a; color: #e2e8f0; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 16px; }
-    .title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-    .big { font-size: 44px; font-weight: 800; }
-    .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-weight: 700; }
-    .ok { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.35); }
-    .bad { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.35); }
-    .muted { color: #94a3b8; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 10px; border-bottom: 1px solid #1f2937; text-align: left; }
-    th { color: #cbd5e1; font-size: 14px; }
-    .controls { display:flex; gap: 10px; flex-wrap: wrap; }
-    button { cursor:pointer; border: 1px solid #334155; background:#0b1220; color:#e2e8f0; padding:10px 12px; border-radius: 10px; font-weight:700;}
-    button:hover { background:#0a1a33; }
-    input { border:1px solid #334155; background:#0b1220; color:#e2e8f0; padding:10px 12px; border-radius:10px; width: 220px;}
-    .footer { margin-top: 14px; font-size: 13px; }
-    .error { color:#ef4444; font-weight:700; }
-    #map {
-    height: 400px;
-    width: 100%;
-    border-radius: 14px;
-    margin-top: 10px;
-}
-#historyBody tr {
-  cursor: pointer;
-}
-
-#historyBody tr:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-    * { box-sizing: border-box; }
-    .row > *, .card { min-width: 0; }
-    .table-scroll { overflow-x: auto; }
-    input { max-width: 100%; font-size: 16px; }
-    button { min-height: 44px; }
-    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
-    .waiting { background: #1f2937; color: #e2e8f0; border: 1px solid #64748b; }
-    @media (max-width: 640px) {
-      body { margin: 12px; }
-      .row { grid-template-columns: 1fr; }
-      .big { font-size: 36px; }
-      #map { height: 300px; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101923">
+  <meta name="color-scheme" content="dark light">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <title>SmartBlind · Panel del bastón</title>
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/dashboard.css?v=2">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="/dashboard.js"></script>
 </head>
-
 <body>
-  <div class="container">
-    <div class="title">🦯 Smart Blind Stick - Dashboard</div>
-    <div class="muted">Distancia, estado y ubicación recibidos del bastón.</div>
-
-    <div class="row" style="margin-top:16px;">
-      <div class="card">
-        <div class="muted">Distancia actual</div>
-        <div class="big"><span id="distance">--</span> <span style="font-size:18px;">cm</span></div>
-        <div style="margin-top:10px;">
-          <span id="obstaclePill" class="pill waiting" role="status">Esperando datos</span>
-        </div>
-        <div class="footer muted">Última actualización: <span id="lastUpdate">--</span></div>
-        <div class="footer"><span id="errMsg" class="error" role="status"></span></div>
-      </div>
-
-      <div class="card">
-        <div class="muted">Controles</div>
-        <div class="controls" style="margin-top:10px;">
-          <button onclick="refreshNow()">Actualizar ahora</button>
-          <button onclick="toggleAuto()">Auto: <span id="autoState">ON</span></button>
-          <label for="intervalMs">Intervalo (ms)</label><input id="intervalMs" type="number" min="200" step="100" value="1000" />
-          <button onclick="applyInterval()">Aplicar ms</button>
-          <button onclick="loadHistory()">Cargar historial</button>
-        </div>
-        <div class="footer muted">
-          Sin envíos del bastón durante 15 segundos, se indica que la lectura está desactualizada. <a href="/logout" style="color:#93c5fd">Cerrar sesión</a>
-        </div>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="SmartBlind, inicio">
+        <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M10 9a4 4 0 0 1 8 0v3L11 27M18 12l7 15" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><circle cx="11" cy="27" r="1.8" fill="currentColor"/></svg></span>
+        <span>SmartBlind<span class="brand-sub">BASTÓN INTELIGENTE</span></span>
+      </a>
+      <div class="header-actions">
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Cambiar a modo claro"><span aria-hidden="true" id="themeIcon">☀</span><span id="themeLabel">Modo claro</span></button>
+        <a class="session-link" href="/logout">Cerrar sesión <span aria-hidden="true">↗</span></a>
       </div>
     </div>
-
-    <div class="card" style="margin-top:16px;">
-      <div class="muted">Historial (últimos datos enviados)</div>
-      <div class="table-scroll"><table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Distancia (cm)</th>
-            <th>Obstáculo</th>
-            <th>Latitud</th>
-            <th>Longitud</th>
-          </tr>
-        </thead>
-        <tbody id="historyBody">
-          <tr><td colspan="5"class="muted">Presiona "Cargar historial".</td></tr>
-        </tbody>
-      </table></div>
+  </header>
+  <main id="main" class="page">
+    <div class="page-heading">
+      <div><p class="eyebrow">PANEL DEL CUIDADOR</p><h1>Tu bastón, de un vistazo.</h1><p class="subtitle">Consulta las lecturas y la última ubicación recibida.</p></div>
+      <a href="#history" class="text-link">Ver historial <span aria-hidden="true">↓</span></a>
     </div>
-    <div class="card" style="margin-top:16px;">
-    <div class="muted">Ubicación GPS del bastón</div>
-    <div id="map"></div>
-</div>
-  </div>
-
-<script>
-  let auto = true;
-  let timer = null;
-  let interval = 1000;
-  let lastReading = null;
-  let loading = false;
-  let map = window.L ? L.map("map").setView([10.6346, -85.4400], 15) : null;
-
-if (map) L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors"
-}).addTo(map);
-
-let marker = null; // No invented GPS position before receiving a valid reading.
-
-  function setError(msg) {
-    document.getElementById("errMsg").textContent = msg || "";
-  }
-
-  function showUnavailable(message) {
-    const pill = document.getElementById("obstaclePill");
-    pill.textContent = message;
-    pill.className = "pill waiting";
-  }
-
-  function showPosition(lat, lng, label, zoom = 15) {
-    if (!map || !Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return;
-    if (!marker) marker = L.marker([lat, lng]).addTo(map);
-    marker.setLatLng([lat, lng]).bindPopup(label);
-    map.setView([lat, lng], zoom);
-  }
-
-  function checkFreshness() {
-    if (!navigator.onLine) { showUnavailable("Sin conexión a Internet"); return; }
-    if (!lastReading) return;
-    const age = Date.now() - Date.parse(lastReading.receivedAt);
-    if (!Number.isFinite(age) || age > 15000) showUnavailable("Sin datos recientes del bastón");
-  }
-
-  function setUI(data) {
-    lastReading = data;
-    document.getElementById("distance").textContent = data.distance;
-    const pill = document.getElementById("obstaclePill");
-    pill.textContent = data.obstacleDetected ? "⚠ Obstáculo detectado" : "Sin obstáculo en la última lectura";
-    pill.className = data.obstacleDetected ? "pill bad" : "pill ok";
-    document.getElementById("lastUpdate").textContent = new Date(data.receivedAt).toLocaleString();
-    showPosition(data.latitude, data.longitude, "Última ubicación recibida del bastón");
-    checkFreshness();
-  }
-
-  async function fetchLast() {
-    if (loading) return;
-    loading = true;
-    try {
-      setError("");
-      const res = await fetch("/api/sensor/last", {cache: "no-store", headers: {Accept: "application/json"}});
-      if (res.redirected || res.status === 401 || res.status === 403) { window.location.assign("/login"); return; }
-      if (res.status === 204) { showUnavailable("Esperando la primera lectura"); return; }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      setUI(await res.json());
-    } catch (e) {
-      showUnavailable("No se puede contactar con el servidor");
-      setError("No hay lecturas actuales. Comprueba la conexión.");
-    } finally { loading = false; }
-  }
-
-  async function loadHistory() {
-    try {
-      setError("");
-      const res = await fetch("/api/sensor/history", {cache: "no-store"});
-      if (res.redirected) { window.location.assign("/login"); return; }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const arr = await res.json();
-
-      const body = document.getElementById("historyBody");
-      body.innerHTML = "";
-
-      if (!Array.isArray(arr) || arr.length === 0) {
-        body.innerHTML = `<tr><td colspan="5"class="muted">Todavía no se han recibido lecturas del bastón.</td></tr>`;
-        return;
-      }
-
-      const last20 = arr.slice(-20).reverse(); // muestra últimos 20
-      last20.forEach((item, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${idx + 1}</td>
-          <td>${item.distance}</td>
-          <td>${item.obstacleDetected ? "Sí" : "No"}</td>
-          <td>${item.latitude}</td>
-           <td>${item.longitude}</td>
-        `;
-        tr.addEventListener("click", () => {
-          auto = false;
-           document.getElementById("autoState").textContent = "OFF";
-           stopAuto();
-          const lat = item.latitude;
-           const lng = item.longitude;
-           showPosition(lat, lng, "Ubicación seleccionada del historial", 17);
-});
-        body.appendChild(tr);
-      });
-    } catch (e) {
-      setError("Error leyendo /api/sensor/history: " + e.message);
-    }
-  }
-
-  function startAuto() {
-    stopAuto();
-    timer = setInterval(fetchLast, interval);
-  }
-
-  function stopAuto() {
-    if (timer) clearInterval(timer);
-    timer = null;
-  }
-
-  function toggleAuto() {
-    auto = !auto;
-    document.getElementById("autoState").textContent = auto ? "ON" : "OFF";
-    if (auto) startAuto();
-    else stopAuto();
-  }
-
-  function applyInterval() {
-    const v = parseInt(document.getElementById("intervalMs").value, 10);
-    if (!Number.isFinite(v) || v < 200) {
-      alert("Pon un valor válido (mínimo 200 ms).");
-      return;
-    }
-    interval = v;
-    if (auto) startAuto();
-  }
-
-  function refreshNow() {
-    fetchLast();
-  }
-
-  if ("serviceWorker" in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  }
-  window.addEventListener("offline", checkFreshness);
-  window.addEventListener("online", fetchLast);
-  setInterval(checkFreshness, 1000);
-  // Init
-  fetchLast();
-  startAuto();
-</script>
+    <div class="overview">
+      <section class="panel reading-panel" aria-labelledby="readingTitle">
+        <div class="section-top"><h2 id="readingTitle">Estado del bastón</h2><span class="small-tag">Última lectura</span></div>
+        <div id="obstaclePill" class="status waiting" role="status">Esperando la primera lectura</div>
+        <p class="metric-label">Distancia al obstáculo</p>
+        <div class="distance"><span id="distance">—</span><span class="unit">cm</span></div>
+        <p id="readingHint" class="muted reading-hint">La distancia aparecerá cuando el bastón envíe datos.</p>
+        <div class="last-reading"><span class="label">Última recepción</span><span id="lastUpdate">Sin lecturas todavía</span></div>
+        <div class="reading-controls">
+          <button type="button" class="primary-button" id="refreshButton"><span aria-hidden="true">↻</span> Actualizar ahora</button>
+          <button type="button" class="auto-control" id="autoButton" aria-pressed="true"><span class="switch" aria-hidden="true"></span><span>Actualización automática<span class="control-caption" id="autoState">Activada</span></span></button>
+        </div>
+        <details class="settings"><summary>Frecuencia de actualización</summary><form id="intervalForm"><label for="intervalMs">Intervalo en milisegundos</label><div class="input-group"><input id="intervalMs" type="number" min="200" step="100" value="1000" required><button class="secondary-button" type="submit">Aplicar</button></div><p class="muted">1000 ms equivalen a 1 segundo.</p><p id="intervalFeedback" role="status"></p></form></details>
+      </section>
+      <section class="panel location-panel" aria-labelledby="locationTitle">
+        <div class="section-top map-heading"><div><p class="eyebrow">UBICACIÓN</p><h2 id="locationTitle">GPS del bastón</h2></div><span class="location-tag" id="gpsState">Sin coordenadas</span></div>
+        <div class="map-stage">
+          <div id="map" aria-label="Mapa de la ubicación recibida del bastón" hidden></div>
+          <div class="map-empty" id="mapEmpty"><span class="location-symbol" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M24 42s14-13 14-25a14 14 0 1 0-28 0c0 12 14 25 14 25Z" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="17" r="5" stroke="currentColor" stroke-width="2"/></svg></span><h3 id="mapEmptyTitle">Esperando ubicación</h3><p id="mapEmptyText">El mapa se mostrará al recibir una lectura con coordenadas GPS válidas.</p></div>
+        </div>
+        <div class="map-footer"><span class="map-note" id="mapCaption">La ubicación corresponde al bastón, no a este dispositivo.</span><button type="button" class="text-button" id="centerButton" disabled>Centrar mapa <span aria-hidden="true">⌖</span></button></div>
+      </section>
+    </div>
+    <div id="errMsg" class="error-banner" role="status" hidden></div>
+    <section class="panel history-panel" id="history" aria-labelledby="historyTitle">
+      <div class="section-top history-heading"><div><p class="eyebrow">ACTIVIDAD</p><h2 id="historyTitle">Historial de lecturas</h2><p class="muted">Las últimas 20 lecturas enviadas por el bastón.</p></div><button type="button" class="secondary-button" id="historyButton">Cargar historial <span aria-hidden="true">↻</span></button></div>
+      <div class="table-scroll" role="region" aria-label="Historial de lecturas, desplazable horizontalmente" tabindex="0"><table><thead><tr><th scope="col">Recepción</th><th scope="col">Distancia</th><th scope="col">Obstáculo</th><th scope="col">Coordenadas GPS</th><th scope="col"><span class="sr-only">Ubicación en el mapa</span></th></tr></thead><tbody id="historyBody"><tr><td colspan="5" class="empty-cell"><strong>Tu historial aparecerá aquí</strong><span>Pulsa «Cargar historial» para consultar las lecturas guardadas.</span></td></tr></tbody></table></div>
+    </section>
+    <footer class="page-footer"><p><span class="info-symbol" aria-hidden="true">i</span> Después de 15 segundos sin envíos, la lectura se marca como desactualizada.</p><span>SmartBlind · Panel del cuidador</span></footer>
+  </main>
 </body>
 </html>
