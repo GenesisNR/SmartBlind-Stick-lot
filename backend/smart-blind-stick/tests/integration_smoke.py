@@ -76,6 +76,22 @@ def main():
 
     try:
         start()
+        anonymous = requests.Session()
+        login = anonymous.get(base + '/login', timeout=5)
+        assert login.status_code == 200 and 'Bienvenido a SmartBlind' in login.text
+        assert 'no-store' in login.headers.get('Cache-Control', '')
+        token = html.unescape(re.search(r'name="_csrf"[^>]*value="([^"]+)"', login.text).group(1))
+        assert anonymous.post(base + '/login', data={'username': 'cuidador', 'password': viewer_password}, timeout=5).status_code == 403
+        invalid_login = anonymous.post(base + '/login', data={'username': 'cuidador', 'password': 'invalid-login-check', '_csrf': token}, allow_redirects=False, timeout=5)
+        assert invalid_login.status_code == 302 and invalid_login.headers['Location'].endswith('/login?error')
+        failure_page = anonymous.get(base + '/login?error', timeout=5)
+        assert 'El usuario o la contraseña no coinciden' in failure_page.text
+        assert 'invalid-login-check' not in failure_page.text and viewer_password not in failure_page.text
+        for asset in ('/dashboard.css', '/theme.js', '/login.css', '/login.js'):
+            asset_response = anonymous.get(base + asset, allow_redirects=False, timeout=5)
+            assert asset_response.status_code == 200, asset
+        assert requests.get(base + '/dashboard.js', allow_redirects=False, timeout=5).status_code in (302, 401, 403)
+        passed.append('Branded login, public styles, invalid credentials and CSRF protection verified')
         for path in ('/', '/index.html', '/api/sensor/last', '/api/sensor/history'):
             response = requests.get(base + path, allow_redirects=False, timeout=5)
             assert response.status_code in (302, 401, 403), (path, response.status_code)

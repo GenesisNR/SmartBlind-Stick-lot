@@ -40,9 +40,11 @@ public class SecurityConfig {
     @Bean @Order(2)
     SecurityFilterChain dashboard(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/health", "/error", "/manifest.webmanifest", "/sw.js", "/offline.html", "/icons/**").permitAll()
+                .requestMatchers("/health", "/error", "/manifest.webmanifest", "/sw.js", "/offline.html", "/icons/**",
+                    "/dashboard.css", "/theme.js", "/login.css", "/login.js").permitAll()
                 .anyRequest().hasRole("VIEWER"))
-            .formLogin(login -> login.defaultSuccessUrl("/", true).permitAll())
+            .formLogin(login -> login.loginPage("/login").loginProcessingUrl("/login")
+                .defaultSuccessUrl("/", true).failureUrl("/login?error").permitAll())
             .logout(logout -> logout.logoutSuccessUrl("/login?logout")).build();
     }
 }

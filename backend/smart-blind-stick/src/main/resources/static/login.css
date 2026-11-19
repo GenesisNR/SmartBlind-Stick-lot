@@ -1,0 +1,48 @@
+.login-page { min-height:100svh; display:flex; flex-direction:column; }
+.login-header { width:100%; max-width:1220px; margin:0 auto; padding:25px 36px; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.login-layout { width:calc(100% - 72px); max-width:1148px; margin:12px auto 0; display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--border); border-radius:22px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow); }
+.project-story { --story-bg:#14283f; background:var(--story-bg); color:#ebf2fc; padding:43px 44px 38px; display:flex; flex-direction:column; }
+.story-eyebrow { color:#b4cef4; font-size:10px; font-weight:650; letter-spacing:1.8px; margin-bottom:17px; }
+.project-story h2 { font-size:43px; line-height:1.12; letter-spacing:-1.4px; font-weight:600; }
+.story-intro { color:#b9c9dc; font-size:14px; line-height:1.7; max-width:34ch; margin-top:17px; }
+.cane-art { color:#a4c8ff; margin:16px 0 20px; }
+.cane-art svg { display:block; width:100%; max-height:210px; }
+.art-grid { opacity:.12; }
+.art-route { opacity:.65; }
+.art-caption { display:block; text-align:center; font-size:8px; letter-spacing:2.1px; color:#b9c9dc; margin-top:6px; }
+.project-features { list-style:none; margin:0; padding:21px 0 0; border-top:1px solid #38506b; display:grid; gap:18px; }
+.project-features li { display:flex; align-items:flex-start; gap:14px; font-size:13px; font-weight:600; }
+.feature-mark { font-size:10px; font-variant-numeric:tabular-nums; color:#b4cef4; border:1px solid #496685; border-radius:6px; padding:4px 6px; margin-top:1px; }
+.project-features small { display:block; color:#b9c9dc; font-size:11px; line-height:1.6; font-weight:400; margin-top:3px; }
+.login-section { padding:46px 48px 25px; display:flex; flex-direction:column; justify-content:center; }
+.login-form-wrap { width:100%; max-width:360px; margin:auto; padding:25px 0; }
+.access-icon { display:block; width:43px; height:43px; padding:10px; background:var(--tint); color:var(--primary); border-radius:11px; margin-bottom:24px; }
+.login-form-wrap .eyebrow { margin-bottom:9px; }
+.login-form-wrap h1 { font-size:28px; line-height:1.25; letter-spacing:-.8px; }
+.login-subtitle { color:var(--muted); margin-top:12px; font-size:13px; }
+#loginForm { margin-top:29px; }
+.form-field { margin-bottom:21px; }
+.form-field label { display:block; font-size:13px; font-weight:600; margin-bottom:8px; }
+.form-field input { min-height:48px; border-radius:9px; background:var(--surface-subtle); }
+.field-hint { margin-top:7px; font-size:11px; color:var(--muted); }
+.password-field { display:flex; position:relative; }
+.password-field input { padding-right:83px; }
+.password-field button { position:absolute; right:4px; top:4px; bottom:4px; padding:0 10px; border:0; border-radius:6px; font-size:11px; font-weight:600; background:transparent; color:var(--primary); }
+.password-field button:hover { background:var(--tint); }
+.login-submit { width:100%; min-height:48px; justify-content:space-between; margin-top:3px; padding:11px 17px; font-size:13px; }
+.login-submit span { font-size:18px; }
+.access-note { display:flex; gap:9px; margin-top:22px; color:var(--muted); font-size:11px; line-height:1.7; }
+.access-note>span { width:14px; height:14px; margin-top:2px; flex-shrink:0; border:1px solid var(--muted); border-radius:50%; text-align:center; line-height:12px; font-size:9px; }
+.login-bottom { font-size:10px; color:var(--muted); text-align:center; margin-top:20px; }
+.login-footer { max-width:1220px; width:100%; margin:auto auto 0; padding:24px 36px; display:flex; justify-content:space-between; gap:18px; color:var(--muted); font-size:10px; }
+.login-message { margin-top:22px; border-radius:8px; padding:12px 14px; font-size:12px; border:1px solid currentColor; }
+.login-error { color:var(--bad); background:var(--bad-bg); }
+.login-success { color:var(--good); background:var(--good-bg); }
+@media(max-width:950px) { .project-story{padding:36px 30px}.login-section{padding:36px 30px 24px}.project-story h2{font-size:38px}.login-form-wrap h1{font-size:26px} }
+@media(max-width:680px) {
+  .login-header{padding:19px 22px}.login-header #themeLabel{display:inline}.login-header .brand-sub{font-size:8px}
+  .login-layout{width:calc(100% - 36px);grid-template-columns:1fr;margin-top:3px;border-radius:17px}
+  .project-story{padding:25px 25px 27px}.story-eyebrow{font-size:9px;margin-bottom:9px}.project-story h2{font-size:29px;letter-spacing:-.8px}.project-story h2 br{display:none}.story-intro{max-width:40ch;font-size:12px;margin-top:12px}
+  .cane-art,.project-features{display:none}.login-section{padding:28px 25px 22px}.login-form-wrap{max-width:none;padding:0}.access-icon{display:none}.login-form-wrap h1{font-size:24px}.login-subtitle{font-size:12px}#loginForm{margin-top:25px}.login-bottom{margin-top:27px}.login-footer{padding:22px;font-size:10px;flex-direction:column;gap:5px}
+}
+@media(max-width:360px) { .login-header{padding:18px}.login-header #themeLabel{display:none}.project-story,.login-section{padding-left:21px;padding-right:21px}.login-form-wrap h1{font-size:22px} }
